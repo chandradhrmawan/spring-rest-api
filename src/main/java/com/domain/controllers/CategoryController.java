@@ -1,6 +1,11 @@
 package com.domain.controllers;
 
+import java.util.Arrays;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.Errors;
@@ -13,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.domain.dto.CategoryData;
 import com.domain.dto.ResponseData;
+import com.domain.dto.SearchData;
 import com.domain.models.entities.Category;
 import com.domain.services.CategoryService;
 
@@ -87,6 +93,32 @@ public class CategoryController {
     responseData.setPayload(categoryData);
     categoryService.saveOrUpdateCategory(category);
 
+    return ResponseEntity.ok(responseData);
+
+  }
+
+  @PostMapping("/search/{size}/{page}/{sort}")
+  public Iterable<Category> findByName(
+      @RequestBody SearchData searchData,
+      @PathVariable("size") int size,
+      @PathVariable("page") int page,
+      @PathVariable("sort") String sort) {
+
+    Sort sortDirection = sort.equalsIgnoreCase("desc") ? Sort.by("id").descending() : Sort.by("id").ascending();
+
+    Pageable pageable = PageRequest.of(page, size, sortDirection);
+
+    return categoryService
+        .findByName(searchData.getSearchKey(), pageable);
+  }
+
+  @PostMapping("/batch")
+  public ResponseEntity<ResponseData<Iterable<Category>>> createBatch(@RequestBody Category[] categories) {
+
+    ResponseData<Iterable<Category>> responseData = new ResponseData<>();
+    responseData.setPayload(categoryService.saveBatch(Arrays.asList(categories)));
+
+    responseData.setStatus(true);
     return ResponseEntity.ok(responseData);
 
   }
